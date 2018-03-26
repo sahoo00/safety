@@ -1,4 +1,6 @@
 
+var globalData = null;
+
 var ident = function (d) { return d; };
 
 function callShow() {
@@ -16,7 +18,10 @@ function callShow() {
   if (tool == "My Safety Circle") {
     showCircle();
   }
-  if (tool == "Triggers") {
+  if (tool == "My Triggers") {
+    showMyTriggers();
+  }
+  if (tool == "Triggers to Respond") {
     showTriggers();
   }
   if (tool == "Responses") {
@@ -25,7 +30,136 @@ function callShow() {
   if (tool == "Users") {
     showUsers();
   }
+  if (tool == "Buy") {
+    showBuy();
+  }
+  if (tool == "Make Devices") {
+    showMakeDevices();
+  }
 
+}
+
+function showStock() {
+  d3.select("#mDevices").html("Stock Devices");
+  d3.json("safety.php?go=getStock",
+      function (data) {
+        var reftable = d3.select("#mDevices").append("table")
+          .attr("border", 0);
+        var refthead = reftable.append("thead"),
+        reftbody = reftable.append("tbody");
+        var columns = ["Device ID", "Device Type"];
+        refthead.append("tr").selectAll("th").data(columns)
+          .enter().append("th").attr("align", "left").text(ident);
+        reftbody.selectAll("tr").data(data)
+          .enter()
+          .append("tr").attr("id", function (d, i) { return i; })
+          .selectAll("td").data(function (d, i) {
+            return d;
+          }).enter().append("td").html(ident);
+      });
+}
+
+function showMakeDevices() {
+  d3.select("#adminContent").html("");
+  d3.select("#templateContainer").html("");
+  var sel = d3.select("#adminContent");
+  sel.append("span").text("Device Type:");
+  sel.append("input").attr("type", "text").attr("class", "abox")
+    .attr("id", "deviceType");
+  sel.append("br");
+  sel.append("button").text("Make")
+    .on("click", function (e) {
+      $('#addRemoveStatus').html("");
+      var dtype = $("#deviceType").val();
+      d3.json("safety.php?go=makeDevice&dtype=" + dtype,
+          function (error, data) {
+            if (error) {
+              $('#addRemoveStatus').html("Error");
+            }
+            else if (data.length == 2 && data[0] == 0) {
+              $('#addRemoveStatus').html(data[1]);
+            }
+            else {
+              $('#addRemoveStatus').html("Success");
+              console.log(data);
+              showStock();
+            }
+          });
+    });
+  sel.append("br");
+  sel.append("span").attr("id", "addRemoveStatus");
+  sel.append("br");
+  sel.append("div").attr("id", "mDevices");
+  showStock();
+}
+
+function showPurchasedDevices() {
+  d3.select("#bDevices").html("Purchased Devices");
+  d3.json("safety.php?go=getDevices&pid=" + user_login_data[3],
+      function (data) {
+        var reftable = d3.select("#bDevices").append("table")
+          .attr("border", 0);
+        var refthead = reftable.append("thead"),
+        reftbody = reftable.append("tbody");
+        var columns = ["Device ID", "Device Type", "Key"];
+        refthead.append("tr").selectAll("th").data(columns)
+          .enter().append("th").attr("align", "left").text(ident);
+        reftbody.selectAll("tr").data(data)
+          .enter()
+          .append("tr").attr("id", function (d, i) { return i; })
+          .selectAll("td").data(function (d, i) {
+            return d;
+          }).enter().append("td").html(ident);
+      });
+}
+
+function showBuy() {
+  d3.select("#adminContent").html("");
+  d3.select("#templateContainer").html("");
+  d3.json("safety.php?go=getPrices",
+      function (data) {
+        var reftable = d3.select("#templateContainer").append("table")
+          .attr("id", "utable").attr("border", 0);
+        d3.select("#templateContainer").append("div")
+          .attr("id", "addRemoveStatus");
+        d3.select("#templateContainer").append("div")
+          .attr("id", "bDevices");
+        var refthead = reftable.append("thead"),
+        reftbody = reftable.append("tbody").attr("id", "userList");
+        var columns = ["Device Type", "Version", "Price", "Stock", "Buy"];
+        refthead.append("tr").selectAll("th").data(columns)
+          .enter().append("th").attr("align", "left").text(ident);
+        reftbody.selectAll("tr").data(data)
+          .enter()
+          .append("tr").attr("id", function (d, i) { return i; })
+          .selectAll("td").data(function (d, i) {
+            return d;
+          }).enter().append("td").html(ident);
+        reftbody.selectAll("tr").append("td").append("button").text("Buy")
+          .on("click", function (e) {
+            $('#addRemoveStatus').html("");
+            var cell = d3.select(this);
+            var obj = d3.select(this.parentNode).data();
+            console.log(obj);
+            d3.json("safety.php?go=buyDevice&dtype=" + obj[0][0]
+                +"&pid=" + user_login_data[3],
+                function(error, data) {
+                  globalData = data;
+                  if (error) {
+                    $('#addRemoveStatus').html("Error");
+                  }
+                  else if (data.length == 2 && data[0] == 0) {
+                    $('#addRemoveStatus').html(data[1]);
+                  }
+                  else {
+                    $('#addRemoveStatus').html("Success");
+                    console.log(data);
+                    showPurchasedDevices();
+                  }
+                });
+          });
+         showPurchasedDevices();
+      });
 }
 
 function showDashboard() {
@@ -34,21 +168,45 @@ function showDashboard() {
   var sel = d3.select("#templateContainer");
   sel.append("span").text("Pull Trigger: ");
   sel.append("button").text("Trigger")
-  .on("click", function (e) {
-    d3.json("safety.php?go=Trigger&pid=" + user_login_data[3],
-        function (data) {
-            console.log(data);
-        });
-  });
+    .on("click", function (e) {
+      $('#addRemoveStatus').html("Status");
+      d3.json("safety.php?go=Trigger&pid=" + user_login_data[3],
+          function(error, data) {
+            globalData = data;
+            if (error) {
+              $('#addRemoveStatus').html("Error");
+            }
+            else if (data.length == 2 && data[0] == 0) {
+              $('#addRemoveStatus').html(data[1]);
+            }
+            else {
+              $('#addRemoveStatus').html("Success");
+              console.log(data);
+            }
+          });
+    });
   sel.append("br");
   sel.append("span").text("Close Trigger: ");
   sel.append("button").text("Close")
-  .on("click", function (e) {
-    d3.json("safety.php?go=closeTrigger&pid=" + user_login_data[3],
-        function (data) {
-            console.log(data);
-        });
-  });
+    .on("click", function (e) {
+      $('#addRemoveStatus').html("Status");
+      d3.json("safety.php?go=closeTrigger&pid=" + user_login_data[3],
+          function(error, data) {
+            globalData = data;
+            if (error) {
+              $('#addRemoveStatus').html("Error");
+            }
+            else if (data.length == 2 && data[0] == 0) {
+              $('#addRemoveStatus').html(data[1]);
+            }
+            else {
+              $('#addRemoveStatus').html("Success");
+              console.log(data);
+            }
+          });
+    });
+  sel.append("br");
+  sel.append("div").attr("id", "addRemoveStatus");
   sel.append("br");
   sel.append("span").text("Location: ");
   sel.append("div").attr("id", "pLocation");
@@ -71,7 +229,7 @@ function showDashboard() {
   sel.append("br");
   sel.append("span").text("Devices: ");
   sel.append("div").attr("id", "pDevices");
-  d3.json("safety.php?go=getDevices&pid=" + user_login_data[3],
+  d3.json("safety.php?go=myDevices&pid=" + user_login_data[3],
       function (data) {
         var reftable = d3.select("#pDevices").append("table")
           .attr("id", "utable").attr("border", 0);
@@ -96,19 +254,35 @@ function showLocation() {
   sel.append("span").text("Latitude:");
   sel.append("input").attr("type", "text").attr("class", "abox")
     .attr("id", "lat");
+  sel.append("br");
   sel.append("span").text("Longitude:");
   sel.append("input").attr("type", "text").attr("class", "abox")
     .attr("id", "lon");
+  sel.append("br");
   sel.append("button").text("Add")
     .on("click", function (e) {
+      $('#addRemoveStatus').html("Status:");
       var lat = $("#lat").val();
       var lon = $("#lon").val();
       d3.json("safety.php?go=addPersonLocation&pid=" + user_login_data[3] +
           "&lat=" + lat + "&lon=" + lon,
-          function (data) {
-            console.log(data);
+          function (error, data) {
+            globalData = data;
+            if (error) {
+              $('#addRemoveStatus').html("Error");
+            }
+            else if (data.length == 2 && data[0] == 0) {
+              $('#addRemoveStatus').html(data[1]);
+            }
+            else {
+              $('#addRemoveStatus').html("Success");
+              console.log(data);
+            }
           });
     });
+  sel.append("br");
+  sel.append("span").text("Status:")
+    .attr("id", "addRemoveStatus");
   d3.json("safety.php?go=getPersonLocation&pid=" + user_login_data[3],
       function (data) {
         var reftable = d3.select("#templateContainer").append("table")
@@ -134,30 +308,46 @@ function showDevices() {
   sel.append("span").text("Device ID:");
   sel.append("input").attr("type", "text").attr("class", "abox")
     .attr("id", "deviceID");
+  sel.append("br");
   sel.append("span").text("Device Type:");
   sel.append("input").attr("type", "text").attr("class", "abox")
     .attr("id", "deviceType");
+  sel.append("br");
+  sel.append("span").text("Confirmation Key:");
+  sel.append("input").attr("type", "text").attr("class", "abox")
+    .attr("id", "CKey");
+  sel.append("br");
   sel.append("button").text("Add")
     .on("click", function (e) {
+      $('#addRemoveStatus').html("");
       var did = $("#deviceID").val();
       var dtype = $("#deviceType").val();
-      d3.json("safety.php?go=addDevices&did=" + did + "&dtype=" + dtype,
-          function (data) {
-            console.log(data);
-          });
+      var ckey = $("#CKey").val();
+      console.log([did, dtype, ckey]);
       d3.json("safety.php?go=addDevice&pid=" + user_login_data[3] +
-          "&did=" + did,
-          function (data) {
-            console.log(data);
+          "&did=" + did + "&dtype=" + dtype + "&ckey=" + ckey,
+          function (error, data) {
+            if (error) {
+              $('#addRemoveStatus').html("Error");
+            }
+            else if (data.length == 2 && data[0] == 0) {
+              $('#addRemoveStatus').html(data[1]);
+            }
+            else {
+              $('#addRemoveStatus').html("Success");
+              console.log(data);
+            }
           });
     });
-  d3.json("safety.php?go=getDevices&pid=" + user_login_data[3],
+  sel.append("br");
+  sel.append("span").attr("id", "addRemoveStatus");
+  d3.json("safety.php?go=myDevices&pid=" + user_login_data[3],
       function (data) {
         var reftable = d3.select("#templateContainer").append("table")
           .attr("id", "utable").attr("border", 0);
         var refthead = reftable.append("thead"),
         reftbody = reftable.append("tbody").attr("id", "userList");
-        var columns = ["Device ID", "Device Type"];
+        var columns = ["Device ID", "Device Type", "Remove"];
         refthead.append("tr").selectAll("th").data(columns)
           .enter().append("th").attr("align", "left").text(ident);
         reftbody.selectAll("tr").data(data)
@@ -166,6 +356,47 @@ function showDevices() {
           .selectAll("td").data(function (d, i) {
             return d;
           }).enter().append("td").html(ident);
+        reftbody.selectAll("tr").append("td").append("button").text("Remove")
+          .on("click", function (e) {
+            var cell = d3.select(this);
+            var obj = d3.select(this.parentNode).data();
+            console.log(obj);
+            var m = new Modal({
+              id: 'myRemove',
+              header: 'Remove Devices',
+            });
+            m.getBody().html('<div id="removeDevicesDialog"></div>');
+            m.show();
+            $('#myRemove').on('shown.bs.modal',function() {
+              var sel = d3.select("#removeDevicesDialog");
+              sel.append("span").text("Confirmation Key:");
+              sel.append("input").attr("type", "text").attr("class", "abox")
+                .attr("id", "iCkeyInfo");
+              sel.append("br");
+              sel.append("button").text("Submit")
+                .on("click", function (e) {
+                  var ckey = d3.select("#iCkeyInfo").property('value');
+                  d3.json("safety.php?go=removeDevice&dtype=" + obj[0][1]
+                      +"&pid=" + user_login_data[3] + "&did=" + obj[0][0]
+                      + "&ckey=" + ckey,
+                      function(error, data) {
+                        if (error) {
+                          $('#iStatus').html("Error!");
+                        }
+                        else if (data.length == 2 && data[0] == 0) {
+                          $('#iStatus').html(data[1]);
+                        }
+                        else {
+                          $('#iStatus').html("Success");
+                          console.log(data);
+                        }
+                      });
+                });
+              sel.append("br");
+              sel.append("span").text(" Status: ")
+                .attr("id", "iStatus");
+            });
+          });
       });
 }
 
@@ -181,7 +412,8 @@ function showCircle() {
       d3.json("safety.php?go=searchCircle&pid=" + user_login_data[3] +
           "&search=" + str,
           function (data) {
-            var reftable = d3.select("#adminContent").append("table")
+            d3.select("#searchCircleResult").html("");
+            var reftable = d3.select("#searchCircleResult").append("table")
               .attr("id", "utable").attr("border", 0);
             var refthead = reftable.append("thead"),
             reftbody = reftable.append("tbody").attr("id", "userList");
@@ -195,22 +427,40 @@ function showCircle() {
               .selectAll("td").data(function (d, i) {
                 return d;
               }).enter().append("td").html(ident);
-            reftbody.selectAll("tr").append("input").attr("class", "abox");
-            reftbody.selectAll("tr").append("td").html("&nbsp; + &nbsp;")
+            reftbody.selectAll("tr").selectAll("td")
+              .filter(function (d, i) { return i == 4; })
+              .html("")
+              .append("input").attr("class", "abox")
+              .attr("value", ident);
+            reftbody.selectAll("tr").append("td")
+              .append("button").text("Add")
               .on("click", function (e) {
+                $('#addRemoveStatus').html("Status");
+                globalData = this;
                 var cell = d3.select(this);
-                var obj = d3.select(this.parentNode).data();
-                var rel = d3.select(this.parentNode).select("input").property("value");
+                var obj = d3.select(this).data();
+                var box = d3.select(this.parentNode.parentNode).select("input");
+                var rel = box.property("value");
                 console.log(rel);
-                d3.text("safety.php?go=addCircle&username=" + obj[0][2]
+                d3.json("safety.php?go=addCircle&username=" + obj[0][2]
                     +"&pid=" + user_login_data[3] + "&relationship=" + rel, 
-                    function(error, text) {
-                      if (error) throw error;
-                      console.log(text); // Hello, world!
+                    function(error, data) {
+                      if (error) {
+                        $('#addRemoveStatus').html("Error");
+                      }
+                      else if (data.length == 2 && data[0] == 0) {
+                        $('#addRemoveStatus').html(data[1]);
+                      }
+                      else {
+                        $('#addRemoveStatus').html("Success");
+                        console.log(data);
+                      }
                     });
               });
           });
     });
+  sel.append("div").attr("id", "searchCircleResult");
+  sel.append("div").attr("id", "addRemoveStatus");
   d3.json("safety.php?go=getCircle&pid=" + user_login_data[3],
       function (data) {
         var reftable = d3.select("#templateContainer").append("table")
@@ -218,7 +468,7 @@ function showCircle() {
         var refthead = reftable.append("thead"),
         reftbody = reftable.append("tbody").attr("id", "userList");
         var columns = ["Last name", "First name", "Username", 
-        "email", "relationship"];
+        "email", "relationship", "Remove"];
         refthead.append("tr").selectAll("th").data(columns)
           .enter().append("th").attr("align", "left").text(ident);
         reftbody.selectAll("tr").data(data)
@@ -227,6 +477,28 @@ function showCircle() {
           .selectAll("td").data(function (d, i) {
             return d;
           }).enter().append("td").html(ident);
+        reftbody.selectAll("tr").append("td")
+          .append("button").text("Remove")
+          .on("click", function (e) {
+            $('#addRemoveStatus').html("Status");
+            var cell = d3.select(this);
+            var obj = d3.select(this.parentNode).data();
+            console.log(obj[0][2] + " " + obj[0][4]);
+            d3.json("safety.php?go=removeCircle&username=" + obj[0][2]
+                +"&pid=" + user_login_data[3] + "&relationship=" + obj[0][4], 
+                function(error, data) {
+                  if (error) {
+                    $('#addRemoveStatus').html("Error");
+                  }
+                  else if (data.length == 2 && data[0] == 0) {
+                    $('#addRemoveStatus').html(data[1]);
+                  }
+                  else {
+                    $('#addRemoveStatus').html("Success");
+                    console.log(data);
+                  }
+                });
+          });
       });
 }
 
@@ -234,6 +506,51 @@ function showTriggers() {
   d3.select("#adminContent").html("");
   d3.select("#templateContainer").html("");
   d3.json("safety.php?go=getTriggers&pid=" + user_login_data[3],
+      function (data) {
+        var reftable = d3.select("#templateContainer").append("table")
+          .attr("id", "utable").attr("border", 0);
+        d3.select("#templateContainer").append("div")
+          .attr("id", "addRemoveStatus");
+        var refthead = reftable.append("thead"),
+        reftbody = reftable.append("tbody").attr("id", "userList");
+        var columns = ["Last name", "First name", "Username", 
+        "email", "distance", "TID", "Response", "Add"];
+        refthead.append("tr").selectAll("th").data(columns)
+          .enter().append("th").attr("align", "left").text(ident);
+        reftbody.selectAll("tr").data(data)
+          .enter()
+          .append("tr").attr("id", function (d, i) { return i; })
+          .selectAll("td").data(function (d, i) {
+            return d;
+          }).enter().append("td").html(ident);
+        reftbody.selectAll("tr").append("td")
+          .append("button").text("Add")
+          .on("click", function (e) {
+            var cell = d3.select(this);
+            var obj = d3.select(this).data();
+            console.log(obj);
+            d3.json("safety.php?go=addResponse&tid=" + obj[0][5]
+                + "&pid=" + user_login_data[3], 
+                function(error, data) {
+                  if (error) {
+                    $('#addRemoveStatus').html("Error");
+                  }
+                  else if (data.length == 2 && data[0] == 0) {
+                    $('#addRemoveStatus').html(data[1]);
+                  }
+                  else {
+                    $('#addRemoveStatus').html("Success");
+                    console.log(data);
+                  }
+                });
+          });
+      });
+}
+
+function showMyTriggers() {
+  d3.select("#adminContent").html("");
+  d3.select("#templateContainer").html("");
+  d3.json("safety.php?go=getMyTriggers&pid=" + user_login_data[3],
       function (data) {
         var reftable = d3.select("#templateContainer").append("table")
           .attr("id", "utable").attr("border", 0);
@@ -249,26 +566,6 @@ function showTriggers() {
           .selectAll("td").data(function (d, i) {
             return d;
           }).enter().append("td").html(ident);
-        var color = "white";
-        reftbody.selectAll("tr").selectAll("td")
-          .filter(function (d, i) { return i == 6; })
-          .style("width", "50px").style("text-align", "center")
-          .style('background-color', color)
-          .on('mouseover', function(){
-            d3.select(this).style('background-color', 'green');})
-          .on('mouseout', function(){
-            d3.select(this).style('background-color', color);})
-          .on("click", function (e) {
-            var cell = d3.select(this);
-            var obj = d3.select(this.parentNode).data();
-            console.log(obj);
-            d3.json("safety.php?go=addResponse&tid=" + obj[0][5]
-                + "&pid=" + user_login_data[3], 
-                function(error, obj) {
-                  if (error) throw error;
-                  console.log(obj);
-                });
-          });
       });
 }
 
@@ -279,10 +576,12 @@ function showResponses() {
       function (data) {
         var reftable = d3.select("#templateContainer").append("table")
           .attr("id", "utable").attr("border", 0);
+        d3.select("#templateContainer").append("div")
+          .attr("id", "addRemoveStatus");
         var refthead = reftable.append("thead"),
         reftbody = reftable.append("tbody").attr("id", "userList");
         var columns = ["Last name", "First name", "Username", 
-        "email", "distance", "TID", "PID", "Status"];
+        "email", "distance", "TID", "PID", "Status", "Close"];
         refthead.append("tr").selectAll("th").data(columns)
           .enter().append("th").attr("align", "left").text(ident);
         reftbody.selectAll("tr").data(data)
@@ -291,24 +590,25 @@ function showResponses() {
           .selectAll("td").data(function (d, i) {
             return d;
           }).enter().append("td").html(ident);
-        var color = "white";
-        reftbody.selectAll("tr").selectAll("td")
-          .filter(function (d, i) { return i == 7; })
-          .style("width", "50px").style("text-align", "center")
-          .style('background-color', color)
-          .on('mouseover', function(){
-            d3.select(this).style('background-color', 'green');})
-          .on('mouseout', function(){
-            d3.select(this).style('background-color', color);})
+        reftbody.selectAll("tr").append("td")
+          .append("button").text("Close")
           .on("click", function (e) {
             var cell = d3.select(this);
             var obj = d3.select(this.parentNode).data();
             console.log(obj);
             d3.json("safety.php?go=closeResponse&tid=" + obj[0][5]
                 + "&pid=" + obj[0][6],
-                function(error, obj) {
-                  if (error) throw error;
-                  console.log(obj);
+                function(error, data) {
+                  if (error) {
+                    $('#addRemoveStatus').html("Error");
+                  }
+                  else if (data.length == 2 && data[0] == 0) {
+                    $('#addRemoveStatus').html(data[1]);
+                  }
+                  else {
+                    $('#addRemoveStatus').html("Success");
+                    console.log(data);
+                  }
                 });
           });
       });
@@ -326,7 +626,7 @@ function showUsers() {
             .append("form").attr("action", "auth.php")
             .attr("method", "post");
             var data = ["LastName", "FirstName", "Email", "Address",
-            "City", "Country", "zipcode", "username", "password1",
+            "City", "Country", "State", "zipcode", "username", "password1",
             "password2"];
             d1.selectAll("span").data(data).enter().append("span")
             .html(function (d) { return d + " &nbsp;";})

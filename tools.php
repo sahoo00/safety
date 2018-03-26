@@ -58,6 +58,7 @@ if ($USER->authenticated &&
 
     <script src="sha1.js"> </script>
     <script src="user.js"> </script>
+    <script src="modal.js"> </script>
     <script src="safety.js"> </script>
   <script type="text/javascript">
 
@@ -183,13 +184,16 @@ if ($USER->authenticated &&
       <select id="select-tools">
 <?php if ($USER->role == "admin" || $USER->role == "verified") { ?>
         <option>Dashboard</option>
+        <option>Buy</option>
         <option>Location</option>
         <option>Devices</option>
         <option>My Safety Circle</option>
-        <option>Triggers</option>
+        <option>My Triggers</option>
+        <option>Triggers to Respond</option>
         <option>Responses</option>
 <?php } if ($USER->role == "admin") { ?>
         <option>Users</option>
+        <option>Make Devices</option>
 <?php } ?>
       </select>
           </td></tr>

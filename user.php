@@ -540,14 +540,18 @@ EOT;
                         if (array_key_exists("Country", $this->params)) {
                           $country = $this->params["Country"];
                         }
+                        $state = "";
+                        if (array_key_exists("State", $this->params)) {
+                          $state = $this->params["State"];
+                        }
                         $zipcode = "";
                         if (array_key_exists("Zipcode", $this->params)) {
                           $zipcode = $this->params["Zipcode"];
                         }
 
 			// This user can be registered
-			$insert = "INSERT INTO Persons (LastName, FirstName, username, Email, Address, City, Country, zipcode, password, token, role, active, last) ";
-			$insert .= "VALUES ('$lastname', '$firstname', '$username', '$email', '$address', '$city', '$country', '$zipcode', '$dbpassword', '', 'user', 'true', '" . time() . "') ";
+			$insert = "INSERT INTO Persons (LastName, FirstName, username, Email, Address, City, Country, State, zipcode, password, token, role, active, last) ";
+			$insert .= "VALUES ('$lastname', '$firstname', '$username', '$email', '$address', '$city', '$country', '$state', '$zipcode', '$dbpassword', '', 'user', 'true', '" . time() . "') ";
 			$this->database->exec($insert);
 			$query = "SELECT * FROM Persons WHERE username = '$username'";
 			foreach($this->database->query($query) as $data) {

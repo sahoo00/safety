@@ -216,6 +216,10 @@ input.error {
               <input type="text" autocomplete="off" name="City"/>
             </div>
             <div class="field-wrap">
+              <label> State </label>
+              <input type="text" autocomplete="off" name="State"/>
+            </div>
+            <div class="field-wrap">
               <label> Country </label>
               <input type="text" autocomplete="off" name="Country"/>
             </div>
