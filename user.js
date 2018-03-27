@@ -125,6 +125,40 @@ User = {
 			form.submit(); }
                 return false;
 	},
+	processRegistrationUpdate: function()
+	{
+          if(!this.processRegistrationWithoutSubmit()) {
+            var st = $('#errorLog');
+            st.html("Status:<br/>");
+            st.append("Invalid Input<br/>");
+            return false;
+          }
+          var form = $('#signup').find('form')[0];
+          var fd = new FormData(form );
+          $.ajax({
+            url: "auth.php",
+            data: fd,
+            cache: false,
+            processData: false,
+            contentType: false,
+            type: 'POST',
+            success: function (d) {
+              console.log(d);
+              var obj = JSON.parse(d);
+              console.log(obj);
+              var st = $('#errorLog');
+              st.html("Status:<br/>");
+              if (obj[0]) { st.append("Success<br/>"); }
+              else { st.append("Failed<br/>"); }
+              if (obj[1]) { st.append("Active |"); }
+              else { st.append("Inactive |"); }
+              st.append(obj[2].join("|") + "<br/>");
+              st.append(obj[3].join("<br/>") + "<br/>");
+              st.append(obj[4].join("<br/>") + "<br/>");
+            }
+          });
+          return false;
+	},
 
 	/**
 	 * Validate all values used for user log in, before submitting the form.
@@ -189,6 +223,7 @@ User = {
                     contentType: false,
                     type: 'POST',
                     success: function (d) {
+                      console.log(d);
                       var obj = JSON.parse(d);
                       console.log(obj);
                       var st = $('#cstatus');

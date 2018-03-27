@@ -354,15 +354,23 @@ EOT;
 			$query = "SELECT username, token FROM Persons WHERE email = '$email'";
 			$username = "";
 			$token = "";
-			foreach($this->database->query($query) as $data) { $username = $data["username"]; $token = $data["token"]; break; }
+                        $allusers = "";
+                        foreach($this->database->query($query) as $data) { 
+                          $username = $data["username"];
+                          $token = $data["token"];
+                          // step 2b: if there was a user to reset a password for, reset it.
+                          $dbpassword = $this->token_hash_password($username, $sha1, $token);
+                          $update = "UPDATE Persons SET password = '$dbpassword' WHERE username= '$username'";
+                          $this->database->exec($update);
+                          $allusers = $allusers . " $username";
+                        }
 
 			// step 2a: if there was no user to reset a password for, stop.
-			if($username == "" || $token == "") return false;
+                        if($username == "" || $token == "") {
+                          $this->info("email address not found");
+                          return false;
+                        }
 
-			// step 2b: if there was a user to reset a password for, reset it.
-			$dbpassword = $this->token_hash_password($username, $sha1, $token);
-			$update = "UPDATE Persons SET password = '$dbpassword' WHERE email= '$email'";
-			$this->database->exec($update);
 
 			// step 3: notify the user of the new password
 			$from = User::MAILER_NAME;
@@ -372,7 +380,7 @@ EOT;
 			$body = <<<EOT
 	Hi,
 
-	this is an automated message to let you know that someone requested a password reset for the $domain_name user account with user name "$username", which is linked to this email address.
+	this is an automated message to let you know that someone requested a password reset for the $domain_name user account with user name(s) "$allusers", which is linked to this email address.
 
 	We've reset the password to the following 64 character string, so make sure to copy/paste it without any leading or trailing spaces:
 
@@ -388,6 +396,7 @@ EOT;
 			$headers .= "Reply-To: $replyto\r\n";
 			$headers .= "X-Mailer: PHP/" . phpversion();
 			mail($email, $subject, $body, $headers);
+                        return true;
 		}
 
 	// ------------------

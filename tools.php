@@ -155,6 +155,7 @@ if ($USER->authenticated &&
             <h1>Change Password</h1><br>
             <form action="auth.php" method="post">
 	        <input type="hidden" name="op" value="update"/>
+	        <input type="hidden" name="type" value="json"/>
 	        <input type="hidden" name="sha1" value=""/>
 	        <input type="hidden" name="sha2" value=""/>
                 <input type="password" name="password" placeholder="Current Password"/>

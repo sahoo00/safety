@@ -593,6 +593,7 @@ function showResponses() {
         reftbody.selectAll("tr").append("td")
           .append("button").text("Close")
           .on("click", function (e) {
+            $('#addRemoveStatus').html("Status:");
             var cell = d3.select(this);
             var obj = d3.select(this.parentNode).data();
             console.log(obj);
@@ -624,24 +625,34 @@ function showUsers() {
             var sel = d3.select("#userForm");
             var d1 = sel.append("div").attr("id", "signup")
             .append("form").attr("action", "auth.php")
-            .attr("method", "post");
-            var data = ["LastName", "FirstName", "Email", "Address",
-            "City", "Country", "State", "zipcode", "username", "password1",
-            "password2"];
+            .attr("method", "post").attr("onsubmit", "return false;");
+            var data = ["LastName", "FirstName", "Email", "Address", 
+            "City", "Country", "State", "zipcode", "username"];
             d1.selectAll("span").data(data).enter().append("span")
             .html(function (d) { return d + " &nbsp;";})
             .append("input").attr("class", "abox")
             .attr("name", function (d) { return d;});
+            d1.append("span").html("password1 &nbsp;")
+              .append("input")
+              .attr("class", "abox")
+              .attr("type", "password")
+              .attr("name", "password1");
+            d1.append("span").html("password2 &nbsp;")
+              .append("input")
+              .attr("class", "abox")
+              .attr("type", "password")
+              .attr("name", "password2");
             d1.selectAll("span").append("br");
             d1.append("input").attr("type", "hidden")
             .attr("name", "op").attr("value", "signup");
             d1.append("input").attr("type", "hidden")
             .attr("name", "sha1").attr("value", "");
+            d1.append("input").attr("type", "hidden")
+            .attr("name", "type").attr("value", "json");
             d1.append("button").text("Submit")
             .on("click", function (e) {
-                User.processRegistration();
-                return false;
-            });
+                User.processRegistrationUpdate();
+            }); 
         });
     d3.select("#adminContent").append("div").attr("id", "errorLog");
   }
@@ -649,6 +660,8 @@ function showUsers() {
       function (data) {
         var reftable = d3.select("#templateContainer").append("table")
           .attr("id", "utable").attr("border", 0);
+        d3.select("#templateContainer").append("div")
+          .attr("id", "addRemoveStatus");
         var refthead = reftable.append("thead"),
         reftbody = reftable.append("tbody").attr("id", "userList");
         var columns = ["Last name", "First name", "Username", 
@@ -686,26 +699,45 @@ function showUsers() {
               ],
               success: function(response, newValue) {
                 obj[0][4] = newValue;
+                $('#addRemoveStatus').html("Status:");
                 d3.json("safety.php?go=updateRole&username=" + obj[0][2] +
-                    "&role=" + obj[0][4], function (data) {
-                    console.log(data);
-                });
+                    "&role=" + obj[0][4],
+                    function(error, data) {
+                      if (error) {
+                        $('#addRemoveStatus').html("Error");
+                      }
+                      else if (data.length == 2 && data[0] == 0) {
+                        $('#addRemoveStatus').html(data[1]);
+                      }
+                      else {
+                        $('#addRemoveStatus').html("Success");
+                        console.log(data);
+                      }
+                    });
               }
             });
           });
         if (user_login_data[2] == "admin") {
           refthead.select("tr").append("th").html("delete");
-          reftbody.selectAll("tr").append("td").html("X")
-          .on("click", function (e) {
-            var cell = d3.select(this);
-            var obj = d3.select(this.parentNode).data();
-            console.log(obj);
-            d3.text("auth.php?op=unregister&username=" + obj[0][2], 
-                function(error, text) {
-                  if (error) throw error;
-                  console.log(text); // Hello, world!
-                });
-          });
+          reftbody.selectAll("tr").append("td")
+            .append("button").text("Delete")
+            .on("click", function (e) {
+              $('#addRemoveStatus').html("Status:");
+              var cell = d3.select(this);
+              var obj = d3.select(this.parentNode).data();
+              console.log(obj);
+              d3.json("auth.php?op=unregister&username=" + obj[0][2] +
+                  "&type=json", 
+                  function(error, data) {
+                    console.log(data); // Hello, world!
+                    if (error) {
+                      $('#addRemoveStatus').html("Error");
+                    }
+                    else {
+                      $('#addRemoveStatus').html("Success");
+                    }
+                  });
+            });
         }
       });
 }
